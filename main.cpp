@@ -8,6 +8,52 @@
 
 using namespace std;
 
+bool checkLegalMove(vector <vector <Square>> sm, int currRow, int currCol, int nextRow, int nextCol, string color){
+    string otherColor;
+    (color == "white") ? otherColor="black" : otherColor = "white";
+
+    if (sm[currRow][currCol].p.color != color){
+        return false;
+    }
+
+    if (sm[currRow][currCol].p.color == sm[nextRow][nextCol].p.color){
+        return false;
+    }
+
+    if (sm[currRow][currCol].p.type == "pawn" && abs(currRow - nextRow) == 1 && abs(currCol - nextCol) == 1 && sm[nextRow][nextCol].p.color != color){
+        return true;
+    }
+
+    if (sm[currRow][currCol].p.type == "pawn" && sm[nextRow][nextCol].p.color == otherColor){
+        return false;
+    }
+
+    if (sm[currRow][currCol].p.type == "rook"){ //Black magic collision control 
+        if (currRow == nextRow){
+            int step; 
+            (currCol > nextCol) ? step = -1 : step = 1;
+            for (int i = currCol+step; i*step < nextCol*step; i += step){
+                if (sm[currRow][i].p.color == "white" || sm[currRow][i].p.color == "black"){
+                    return false;
+                }
+
+            }
+        }
+        if (currCol == nextCol){
+            int step; 
+            (currRow > nextRow) ? step = -1 : step = 1;
+            for (int i = currRow+step; i*step < nextRow*step; i += step){
+                if (sm[i][currCol].p.color == "white" || sm[i][currCol].p.color == "black"){
+                    return false;
+                }
+
+            }
+        }
+    }
+
+    return sm[currRow][currCol].p.legalMove(currRow, currCol, nextRow, nextCol);
+}
+
 void drawSquares(sf::RenderWindow& w, vector<vector <Square>>& sm){
     for (vector<Square> v : sm){
         for (Square s : v){
@@ -27,8 +73,9 @@ void drawPieces(sf::RenderWindow& w, vector<vector<Square>> sm){
 
     for (int col = 0; col < 8; col++){
         for (int row = 0; row < 8; row++){
-            if (sm[row][col].p.color == "white"){
-                t.loadFromFile("Textures/w_pawn.png");
+            if (sm[row][col].p.color == "white" || sm[row][col].p.color == "black"){
+                string fileName = "Textures/" + sm[row][col].p.color + "_" + sm[row][col].p.type + ".png";
+                t.loadFromFile(fileName);
                 Sprite.setTexture(t);
                 Sprite.setPosition(sm[row][col].p.col*100 + 18,sm[row][col].p.row*100 + 15);
                 Sprite.setScale(0.6,0.6);
@@ -64,30 +111,60 @@ Piece& selectPiece(vector<vector <Square>>& sm, sf::RenderWindow & w){
     return sm[pressedRow][pressedCol].p;
 }
 
-void movePiece(vector<vector <Square>>& sm, sf::RenderWindow& w, Piece& p){
+bool movePiece(vector<vector <Square>>& sm, sf::RenderWindow& w, Piece& p, string color){
     sf::Vector2i mousePos = sf::Mouse::getPosition(w);
     int pressedCol = floor(mousePos.x / 100);
     int pressedRow = floor(mousePos.y / 100);
-    if (p.legalMove(p.row,p.col,pressedRow, pressedCol)){
+    if (checkLegalMove(sm, p.row,p.col,pressedRow, pressedCol, color)){
+        if (sm[pressedRow][pressedCol].p.type == "king"){
+            cout << "Game over " + color + " wins" << endl;
+        }
+
         sm[p.row][p.col].p = Piece();
         p.col = pressedCol;
         p.row = pressedRow;
         sm[pressedRow][pressedCol].p = p;
+        return true;
     }
+    return false;
 }
 
+void placePieces(vector <vector <Square>>& squareMatrix, string color){
+    int row;
+    int secondRow;
+    if (color == "black"){
+        row = 0;
+        secondRow = 1;
+    }
+    else{
+        row = 7;
+        secondRow = 6;
+    }
+    squareMatrix[row][0].p = Piece (color, "rook", row, 0);
+    squareMatrix[row][1].p = Piece (color, "knight", row, 1);
+    squareMatrix[row][2].p = Piece (color, "bishop", row, 2);
+    squareMatrix[row][3].p = Piece (color, "queen", row, 3);
+    squareMatrix[row][4].p = Piece (color, "king", row, 4);
+    squareMatrix[row][5].p = Piece (color, "bishop", row, 5);
+    squareMatrix[row][6].p = Piece (color, "knight", row, 6);
+    squareMatrix[row][7].p = Piece (color, "rook", row, 7);
+
+    for (int i = 0; i < 8; i++){
+        squareMatrix[secondRow][i].p = Piece (color, "pawn", secondRow, i);
+    }
+
+}
 
 int main(){
     srand(time(NULL));
     sf::RenderWindow window(sf::VideoMode(800, 800), "Chess in SFML");
     vector<vector <Square>> squareMatrix;
-    Pawn p("white", 6 ,1); 
-    Rook r("white", 7, 0);
     buildMatrix(squareMatrix);
-    squareMatrix[6][1].p = p;
-    squareMatrix[7][0].p = r;
+    placePieces(squareMatrix, "black");
+    placePieces(squareMatrix, "white");
     bool selectPhase = true;
     Piece selectedPiece;
+    string currentColor = "white";
 
     while (window.isOpen()){
         sf::Event event;
@@ -101,12 +178,15 @@ int main(){
         if (sf::Mouse::isButtonPressed(sf::Mouse::Left)){
             if (selectPhase){
                 selectedPiece = selectPiece(squareMatrix, window);
-                if (selectedPiece.color == "white" || selectedPiece.color == "black"){
+                if (selectedPiece.color == currentColor){
                     selectPhase = false;
                 }
             }
             else{
-                movePiece(squareMatrix, window, selectedPiece);
+                if (movePiece(squareMatrix, window, selectedPiece, currentColor)){
+                    (currentColor == "white") ? currentColor = "black" : currentColor = "white";
+                    selectPhase = true;
+                };
             }
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)){
