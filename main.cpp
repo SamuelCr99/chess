@@ -8,6 +8,8 @@
 
 using namespace std;
 
+float scale = 0.6;
+
 int addMovement(int x){
     if (x < 0){
         return x-1;
@@ -64,7 +66,8 @@ bool checkLegalMove(vector <vector <Square>> sm, int currRow, int currCol, int n
         }
     }
 
-    if (sm[currRow][currCol].p.type == "bishop" || sm[currRow][currCol].p.type == "queen" && abs(currRow-nextRow) == abs(currCol-nextCol)){ //Black magic collision control 
+    if (sm[currRow][currCol].p.type == "bishop" || sm[currRow][currCol].p.type == "queen" &&
+    abs(currRow-nextRow) == abs(currCol-nextCol)){ //Black magic collision control 
         int x_movement;
         int y_movement;
         if (nextRow > currRow){
@@ -105,25 +108,35 @@ void drawSquares(sf::RenderWindow& w, vector<vector <Square>>& sm){
     }
 }
 
+/// @brief Draws all pieces onto screen.
+/// @param Renderwindow 
+/// @param Squarematrix 
 void drawPieces(sf::RenderWindow& w, vector<vector<Square>> sm){
-    sf::Texture t; 
-    sf::Sprite Sprite;
-
     for (int col = 0; col < 8; col++){
         for (int row = 0; row < 8; row++){
             if (validPiece(sm[row][col])){
+                sf::Texture t; 
+                sf::Sprite Sprite;
                 string fileName = "Textures/" + sm[row][col].p.color + "_" + sm[row][col].p.type + ".png";
                 t.loadFromFile(fileName);
                 t.setSmooth(true);
                 Sprite.setTexture(t);
-                Sprite.setPosition(sm[row][col].p.col*100 + 15,sm[row][col].p.row*100 + 15);
-                Sprite.setScale(0.6,0.6);
+                Sprite.setScale(scale,scale);
+                float correctPos = sm[row][col].p.col*100 + 50 - (t.getSize().x*scale)/2;
+                Sprite.setPosition(correctPos,sm[row][col].p.row*100+10);
+
+                if (sm[row][col].p.selected){
+                    Sprite.setColor(sf::Color::Red);
+                }
+
                 w.draw(Sprite);
             }
         }
     }
 }
 
+/// @brief Fills squares to a matrix 
+/// @param Empty vector <vector <Square>> vector 
 void buildMatrix(vector <vector <Square>>& sm){
     for (int col = 0; col < 8; col++){
         vector<Square> r; 
@@ -197,13 +210,16 @@ void placePieces(vector <vector <Square>>& squareMatrix, string color){
 int main(){
     srand(time(NULL));
     sf::RenderWindow window(sf::VideoMode(800, 800), "Chess in SFML");
-    vector<vector <Square>> squareMatrix;
+    vector<vector <Square>> squareMatrix; //All squares on the board
     buildMatrix(squareMatrix);
     placePieces(squareMatrix, "black");
     placePieces(squareMatrix, "white");
     bool selectPhase = true;
+
     Piece selectedPiece;
     string currentColor = "white";
+
+
 
     while (window.isOpen()){
         sf::Event event;
@@ -211,8 +227,6 @@ int main(){
             if (event.type == sf::Event::Closed)
                 window.close();
         }
-        window.clear();
-
 
         if (sf::Mouse::isButtonPressed(sf::Mouse::Left)){
             if (selectPhase){
@@ -225,7 +239,7 @@ int main(){
                 if (movePiece(squareMatrix, window, selectedPiece, currentColor)){
                     (currentColor == "white") ? currentColor = "black" : currentColor = "white";
                     selectPhase = true;
-                };
+                }
             }
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)){
