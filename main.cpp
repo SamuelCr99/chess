@@ -36,7 +36,8 @@ bool checkLegalMove(vector <vector <Square>> sm, int currRow, int currCol, int n
         return false;
     }
 
-    if (sm[currRow][currCol].p.type == "pawn" && (currRow - nextRow == 1 && color == "white" || currRow - nextRow == -1 && color == "black") && abs(currCol - nextCol) == 1 && sm[nextRow][nextCol].p.color == otherColor){
+    if (sm[currRow][currCol].p.type == "pawn" && (currRow - nextRow == 1 && color == "white" || currRow - nextRow == -1 && 
+    color == "black") && abs(currCol - nextCol) == 1 && sm[nextRow][nextCol].p.color == otherColor){
         return true;
     }
 
@@ -175,6 +176,7 @@ bool movePiece(vector<vector <Square>>& sm, sf::RenderWindow& w, Piece& p, strin
         sm[p.row][p.col].p = Piece();
         p.col = pressedCol;
         p.row = pressedRow;
+        p.selected = false;
         sm[pressedRow][pressedCol].p = p;
         return true;
     }
@@ -207,6 +209,14 @@ void placePieces(vector <vector <Square>>& squareMatrix, string color){
 
 }
 
+void clearSelected(vector <vector <Square>>& sm){
+    for (int i = 0; i < 8; i++){
+        for (int k = 0; k < 8; k++){
+            sm[i][k].p.selected = false;
+        }
+    }
+}
+
 int main(){
     srand(time(NULL));
     sf::RenderWindow window(sf::VideoMode(800, 800), "Chess in SFML");
@@ -214,12 +224,10 @@ int main(){
     buildMatrix(squareMatrix);
     placePieces(squareMatrix, "black");
     placePieces(squareMatrix, "white");
-    bool selectPhase = true;
 
-    Piece selectedPiece;
+    Piece p;
+    Piece& selectedPiece = p;
     string currentColor = "white";
-
-
 
     while (window.isOpen()){
         sf::Event event;
@@ -229,23 +237,17 @@ int main(){
         }
 
         if (sf::Mouse::isButtonPressed(sf::Mouse::Left)){
-            if (selectPhase){
-                selectedPiece = selectPiece(squareMatrix, window);
-                if (selectedPiece.color == currentColor){
-                    selectPhase = false;
-                }
+            Piece& tmpSelectedPiece = selectPiece(squareMatrix,window);
+            if (tmpSelectedPiece.color == currentColor){
+                clearSelected(squareMatrix);
+                selectedPiece = tmpSelectedPiece;
+                tmpSelectedPiece.selected = true;
             }
-            else{
-                if (movePiece(squareMatrix, window, selectedPiece, currentColor)){
-                    (currentColor == "white") ? currentColor = "black" : currentColor = "white";
-                    selectPhase = true;
-                }
+        
+            if (movePiece(squareMatrix, window, selectedPiece, currentColor)){
+                (currentColor == "white") ? currentColor = "black" : currentColor = "white";
             }
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)){
-            selectPhase = true;
-        }
-
         drawSquares(window, squareMatrix);
         drawPieces(window, squareMatrix);
         window.display();
