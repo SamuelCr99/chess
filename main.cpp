@@ -8,32 +8,46 @@
 
 using namespace std;
 
+int addMovement(int x){
+    if (x < 0){
+        return x-1;
+    }
+    return x+1;
+}
+
+bool validPiece(Square s){
+    if(s.p.color == "white" || s.p.color == "black"){
+        return true;
+    }
+    return false;
+}
+
 bool checkLegalMove(vector <vector <Square>> sm, int currRow, int currCol, int nextRow, int nextCol, string color){
     string otherColor;
     (color == "white") ? otherColor="black" : otherColor = "white";
 
-    if (sm[currRow][currCol].p.color != color){
+    if (sm[currRow][currCol].p.color != color){ //Make sure we select a piece of correct color
         return false;
     }
 
-    if (sm[currRow][currCol].p.color == sm[nextRow][nextCol].p.color){
+    if (sm[currRow][currCol].p.color == sm[nextRow][nextCol].p.color){ //Make sure to not move to square with other piece of same color
         return false;
     }
 
-    if (sm[currRow][currCol].p.type == "pawn" && abs(currRow - nextRow) == 1 && abs(currCol - nextCol) == 1 && sm[nextRow][nextCol].p.color != color){
+    if (sm[currRow][currCol].p.type == "pawn" && (currRow - nextRow == 1 && color == "white" || currRow - nextRow == -1 && color == "black") && abs(currCol - nextCol) == 1 && sm[nextRow][nextCol].p.color == otherColor){
         return true;
     }
 
-    if (sm[currRow][currCol].p.type == "pawn" && sm[nextRow][nextCol].p.color == otherColor){
+    if (sm[currRow][currCol].p.type == "pawn" && sm[nextRow][nextCol].p.color == otherColor){ //Check so pawn can't take forward
         return false;
     }
 
-    if (sm[currRow][currCol].p.type == "rook"){ //Black magic collision control 
+    if (sm[currRow][currCol].p.type == "rook" || sm[currRow][currCol].p.type == "queen"){ //Black magic collision control 
         if (currRow == nextRow){
             int step; 
             (currCol > nextCol) ? step = -1 : step = 1;
             for (int i = currCol+step; i*step < nextCol*step; i += step){
-                if (sm[currRow][i].p.color == "white" || sm[currRow][i].p.color == "black"){
+                if (validPiece(sm[currRow][i])){
                     return false;
                 }
 
@@ -46,8 +60,32 @@ bool checkLegalMove(vector <vector <Square>> sm, int currRow, int currCol, int n
                 if (sm[i][currCol].p.color == "white" || sm[i][currCol].p.color == "black"){
                     return false;
                 }
-
             }
+        }
+    }
+
+    if (sm[currRow][currCol].p.type == "bishop" || sm[currRow][currCol].p.type == "queen" && abs(currRow-nextRow) == abs(currCol-nextCol)){ //Black magic collision control 
+        int x_movement;
+        int y_movement;
+        if (nextRow > currRow){
+            y_movement = 1;
+        }
+        else{
+            y_movement = -1;
+        }
+        if (nextCol > currCol){
+            x_movement = 1;
+        }
+        else{
+            x_movement = -1;
+        }
+        while(currRow+y_movement != nextRow && currCol+x_movement != nextCol && currRow+y_movement < 8 && 
+        currRow+y_movement >= 0 && currCol+x_movement < 8 && currCol+x_movement >= 0){
+            if (validPiece(sm[currRow+y_movement][currCol+x_movement])){
+                return false;
+            }
+            x_movement = addMovement(x_movement);
+            y_movement = addMovement(y_movement);
         }
     }
 
@@ -60,7 +98,7 @@ void drawSquares(sf::RenderWindow& w, vector<vector <Square>>& sm){
             sf::RectangleShape r(sf::Vector2f(100.f,100.f));
             r.setPosition(sf::Vector2f(s.row*100,s.col*100));
             if (s.color == "black"){
-                r.setFillColor(sf::Color::Black);
+                r.setFillColor(sf::Color(125,135,150));
             }
             w.draw(r);
         }
@@ -73,11 +111,12 @@ void drawPieces(sf::RenderWindow& w, vector<vector<Square>> sm){
 
     for (int col = 0; col < 8; col++){
         for (int row = 0; row < 8; row++){
-            if (sm[row][col].p.color == "white" || sm[row][col].p.color == "black"){
+            if (validPiece(sm[row][col])){
                 string fileName = "Textures/" + sm[row][col].p.color + "_" + sm[row][col].p.type + ".png";
                 t.loadFromFile(fileName);
+                t.setSmooth(true);
                 Sprite.setTexture(t);
-                Sprite.setPosition(sm[row][col].p.col*100 + 18,sm[row][col].p.row*100 + 15);
+                Sprite.setPosition(sm[row][col].p.col*100 + 15,sm[row][col].p.row*100 + 15);
                 Sprite.setScale(0.6,0.6);
                 w.draw(Sprite);
             }
