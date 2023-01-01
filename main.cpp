@@ -45,7 +45,7 @@ bool checkLegalMove(vector <vector <Square>> sm, int currRow, int currCol, int n
         return false;
     }
 
-    if (sm[currRow][currCol].p.type == "rook" || sm[currRow][currCol].p.type == "queen"){ //Black magic collision control 
+    if (sm[currRow][currCol].p.type == "rook" || sm[currRow][currCol].p.type == "queen"){ // Collision control for rook and queen 
         if (currRow == nextRow){
             int step; 
             (currCol > nextCol) ? step = -1 : step = 1;
@@ -68,7 +68,7 @@ bool checkLegalMove(vector <vector <Square>> sm, int currRow, int currCol, int n
     }
 
     if (sm[currRow][currCol].p.type == "bishop" || sm[currRow][currCol].p.type == "queen" &&
-    abs(currRow-nextRow) == abs(currCol-nextCol)){ //Black magic collision control 
+    abs(currRow-nextRow) == abs(currCol-nextCol)){ //Collision control for bishop and queen 
         int x_movement;
         int y_movement;
         if (nextRow > currRow){
