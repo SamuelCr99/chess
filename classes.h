@@ -43,7 +43,7 @@ class Piece {
             }
 
             if (type == "king"){
-                if (currRow == nextRow && abs(currCol - nextCol) == 1 || currCol == nextCol && abs(currRow - nextRow) == 1){
+                if (abs(currRow-nextRow) <= 1 && abs(currCol-nextCol) <= 1){
                     return true;
                 }
             }
