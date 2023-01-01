@@ -168,6 +168,7 @@ bool movePiece(vector<vector <Square>>& sm, sf::RenderWindow& w, Piece& p, strin
     sf::Vector2i mousePos = sf::Mouse::getPosition(w);
     int pressedCol = floor(mousePos.x / 100);
     int pressedRow = floor(mousePos.y / 100);
+
     if (checkLegalMove(sm, p.row,p.col,pressedRow, pressedCol, color)){
         if (sm[pressedRow][pressedCol].p.type == "king"){
             cout << "Game over " + color + " wins" << endl;
@@ -177,7 +178,13 @@ bool movePiece(vector<vector <Square>>& sm, sf::RenderWindow& w, Piece& p, strin
         p.col = pressedCol;
         p.row = pressedRow;
         p.selected = false;
+
+        if (p.type == "pawn" && (p.row == 0 || p.row == 7)){
+            p.type = "queen";
+        }
+
         sm[pressedRow][pressedCol].p = p;
+
         return true;
     }
     return false;
@@ -217,6 +224,33 @@ void clearSelected(vector <vector <Square>>& sm){
     }
 }
 
+bool castle(vector <vector <Square>>& sm, Piece king, Piece rook){
+        sm[king.row][king.col].p = Piece();
+        sm[rook.row][rook.col].p = Piece();
+
+        if(rook.col == 0){
+            king.col -= 2;
+            rook.col = king.col + 1;
+        }
+        if(rook.col == 7){
+            king.col += 2;
+            rook.col = king.col - 1;
+        }
+        sm[king.row][king.col].p = king;
+        sm[rook.row][rook.col].p = rook;
+        return true;
+    
+}
+
+void checkClose(sf::RenderWindow& w){
+    sf::Event event;
+    while (w.pollEvent(event)){
+        if (event.type == sf::Event::Closed)
+            w.close();
+    }
+
+} 
+
 int main(){
     srand(time(NULL));
     sf::RenderWindow window(sf::VideoMode(800, 800), "Chess in SFML");
@@ -229,24 +263,34 @@ int main(){
     Piece& selectedPiece = p;
     string currentColor = "white";
 
-    while (window.isOpen()){
-        sf::Event event;
-        while (window.pollEvent(event)){
-            if (event.type == sf::Event::Closed)
-                window.close();
-        }
+    bool clicked = false;
 
-        if (sf::Mouse::isButtonPressed(sf::Mouse::Left)){
+    while (window.isOpen()){
+        checkClose(window);
+
+        if (!clicked && sf::Mouse::isButtonPressed(sf::Mouse::Left)){
             Piece& tmpSelectedPiece = selectPiece(squareMatrix,window);
+
+            if (tmpSelectedPiece.type == "rook" && selectedPiece.type == "king" &&
+            tmpSelectedPiece.color == selectedPiece.color && tmpSelectedPiece.color == currentColor){
+                if(castle(squareMatrix, selectedPiece, tmpSelectedPiece)){
+                    (currentColor == "white") ? currentColor = "black" : currentColor = "white";
+                }
+            }
+
             if (tmpSelectedPiece.color == currentColor){
                 clearSelected(squareMatrix);
                 selectedPiece = tmpSelectedPiece;
                 tmpSelectedPiece.selected = true;
             }
         
-            if (movePiece(squareMatrix, window, selectedPiece, currentColor)){
+            else if (movePiece(squareMatrix, window, selectedPiece, currentColor)){
                 (currentColor == "white") ? currentColor = "black" : currentColor = "white";
             }
+            clicked = true;
+        }
+        if (!sf::Mouse::isButtonPressed(sf::Mouse::Left)){
+            clicked = false;
         }
         drawSquares(window, squareMatrix);
         drawPieces(window, squareMatrix);
