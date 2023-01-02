@@ -9,6 +9,7 @@ class Piece {
         int row; 
         int col; 
         bool selected;
+        bool moved;
 
         Piece (){
         }
@@ -18,6 +19,7 @@ class Piece {
             row = r; 
             col = co;
             selected = false;
+            moved = false;
         }
 
         bool legalMove(int currRow, int currCol, int nextRow, int nextCol){

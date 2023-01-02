@@ -9,6 +9,7 @@
 using namespace std;
 
 float scale = 0.6;
+bool testMode = false;
 
 int addMovement(int x){
     if (x < 0){
@@ -96,6 +97,9 @@ bool checkLegalMove(vector <vector <Square>> sm, int currRow, int currCol, int n
     return sm[currRow][currCol].p.legalMove(currRow, currCol, nextRow, nextCol);
 }
 
+
+
+
 void drawSquares(sf::RenderWindow& w, vector<vector <Square>>& sm){
     for (vector<Square> v : sm){
         for (Square s : v){
@@ -136,6 +140,49 @@ void drawPieces(sf::RenderWindow& w, vector<vector<Square>> sm){
     }
 }
 
+bool check(vector <vector <Square>> sm, string color){
+    for (int i = 0; i < sm.size(); i++){
+        for (int k = 0; k < sm[0].size(); k++){
+            if (sm[i][k].p.color == color){
+                for (int w = 0; w < sm.size(); w++){
+                    for (int e = 0; e < sm[0].size(); e++){
+                        if (checkLegalMove(sm, i, k, w, e, color) && sm[w][e].p.type == "king"){
+                            return true;
+                        }
+            }
+
+        }
+    }
+        }
+    }
+    return false;
+}
+
+bool checkMate(vector <vector <Square>> sm, string color){
+    string otherColor;
+    (color == "white") ? otherColor="black" : otherColor = "white";
+    for (int i = 0; i < sm.size(); i++){
+        for (int k = 0; k < sm[0].size(); k++){
+            if (sm[i][k].p.color == otherColor){
+                for (int w = 0; w < sm.size(); w++){
+                    for (int e = 0; e < sm[0].size(); e++){
+                        vector <vector <Square>> tmpSm; 
+                        if (checkLegalMove(sm, i, k, w, e, otherColor)){
+                            tmpSm = sm; 
+                            tmpSm[i][k].p = Piece();
+                            tmpSm[w][e].p = sm[i][k].p;
+                            if (!check(tmpSm, color))
+                            return false;
+                        }
+            }
+
+        }
+    }
+        }
+    }
+    return true;
+}
+
 /// @brief Fills squares to a matrix 
 /// @param Empty vector <vector <Square>> vector 
 void buildMatrix(vector <vector <Square>>& sm){
@@ -165,13 +212,27 @@ Piece& selectPiece(vector<vector <Square>>& sm, sf::RenderWindow & w){
 }
 
 bool movePiece(vector<vector <Square>>& sm, sf::RenderWindow& w, Piece& p, string color){
+    string otherColor;
+    (color == "white") ? otherColor="black" : otherColor = "white";
     sf::Vector2i mousePos = sf::Mouse::getPosition(w);
     int pressedCol = floor(mousePos.x / 100);
     int pressedRow = floor(mousePos.y / 100);
 
     if (checkLegalMove(sm, p.row,p.col,pressedRow, pressedCol, color)){
-        if (sm[pressedRow][pressedCol].p.type == "king"){
-            cout << "Game over " + color + " wins" << endl;
+        vector<vector <Square>> tmpSm = sm;        
+        Piece tmpP = p;
+        tmpSm[tmpP.row][tmpP.col].p = Piece();
+        tmpP.col = pressedCol;
+        tmpP.row = pressedRow;
+
+        if (tmpP.type == "pawn" && (tmpP.row == 0 || tmpP.row == 7)){
+            tmpP.type = "queen";
+        }
+
+
+        tmpSm[pressedRow][pressedCol].p = tmpP;
+        if (check(tmpSm, otherColor)){
+            return false;
         }
 
         sm[p.row][p.col].p = Piece();
@@ -182,6 +243,8 @@ bool movePiece(vector<vector <Square>>& sm, sf::RenderWindow& w, Piece& p, strin
         if (p.type == "pawn" && (p.row == 0 || p.row == 7)){
             p.type = "queen";
         }
+
+        p.moved = true;
 
         sm[pressedRow][pressedCol].p = p;
 
@@ -216,6 +279,7 @@ void placePieces(vector <vector <Square>>& squareMatrix, string color){
 
 }
 
+
 void clearSelected(vector <vector <Square>>& sm){
     for (int i = 0; i < 8; i++){
         for (int k = 0; k < 8; k++){
@@ -225,6 +289,20 @@ void clearSelected(vector <vector <Square>>& sm){
 }
 
 bool castle(vector <vector <Square>>& sm, Piece king, Piece rook){
+        if (king.moved == true || rook.moved == true){
+            return false;
+        }        
+
+
+
+        int step;
+        (king.col > rook.col) ? step = -1 : step = 1;
+        for (int i = king.col + step; i*step < rook.col*step; i += step){
+            if (validPiece(sm[king.row][i])){
+                return false;
+            }
+        }
+
         sm[king.row][king.col].p = Piece();
         sm[rook.row][rook.col].p = Piece();
 
@@ -236,6 +314,8 @@ bool castle(vector <vector <Square>>& sm, Piece king, Piece rook){
             king.col += 2;
             rook.col = king.col - 1;
         }
+        king.moved = true;
+        rook.moved = true;
         sm[king.row][king.col].p = king;
         sm[rook.row][rook.col].p = rook;
         return true;
@@ -248,8 +328,19 @@ void checkClose(sf::RenderWindow& w){
         if (event.type == sf::Event::Closed)
             w.close();
     }
-
 } 
+
+void afterTurnRoutine(string& color, vector <vector <Square>> sm){
+    if(check(sm, color)){
+        cout << "Check!" << endl;
+        if (checkMate(sm, color)){
+            cout << "Checkmate: " + color + " wins!"  << endl;
+        }
+    }
+    if (!testMode){
+        (color == "white") ? color = "black" : color = "white";
+    }
+}
 
 int main(){
     srand(time(NULL));
@@ -268,13 +359,14 @@ int main(){
     while (window.isOpen()){
         checkClose(window);
 
+
         if (!clicked && sf::Mouse::isButtonPressed(sf::Mouse::Left)){
             Piece& tmpSelectedPiece = selectPiece(squareMatrix,window);
 
             if (tmpSelectedPiece.type == "rook" && selectedPiece.type == "king" &&
             tmpSelectedPiece.color == selectedPiece.color && tmpSelectedPiece.color == currentColor){
                 if(castle(squareMatrix, selectedPiece, tmpSelectedPiece)){
-                    (currentColor == "white") ? currentColor = "black" : currentColor = "white";
+                    afterTurnRoutine(currentColor, squareMatrix);
                 }
             }
 
@@ -285,7 +377,7 @@ int main(){
             }
         
             else if (movePiece(squareMatrix, window, selectedPiece, currentColor)){
-                (currentColor == "white") ? currentColor = "black" : currentColor = "white";
+                afterTurnRoutine(currentColor, squareMatrix);
             }
             clicked = true;
         }
