@@ -29,10 +29,6 @@ bool checkLegalMove(vector <vector <Square>> sm, int currRow, int currCol, int n
     string otherColor;
     (color == "white") ? otherColor="black" : otherColor = "white";
 
-    if (sm[currRow][currCol].p.color != color){ //Make sure we select a piece of correct color
-        return false;
-    }
-
     if (sm[currRow][currCol].p.color == sm[nextRow][nextCol].p.color){ //Make sure to not move to square with other piece of same color
         return false;
     }
@@ -72,18 +68,8 @@ bool checkLegalMove(vector <vector <Square>> sm, int currRow, int currCol, int n
     abs(currRow-nextRow) == abs(currCol-nextCol)){ //Collision control for bishop and queen 
         int x_movement;
         int y_movement;
-        if (nextRow > currRow){
-            y_movement = 1;
-        }
-        else{
-            y_movement = -1;
-        }
-        if (nextCol > currCol){
-            x_movement = 1;
-        }
-        else{
-            x_movement = -1;
-        }
+        nextRow > currRow ? y_movement = 1 : y_movement = -1;
+        nextCol > currCol ? x_movement = 1 : x_movement = -1;
         while(currRow+y_movement != nextRow && currCol+x_movement != nextCol && currRow+y_movement < 8 && 
         currRow+y_movement >= 0 && currCol+x_movement < 8 && currCol+x_movement >= 0){
             if (validPiece(sm[currRow+y_movement][currCol+x_movement])){
@@ -174,10 +160,10 @@ bool checkMate(vector <vector <Square>> sm, string color){
                             if (!check(tmpSm, color))
                             return false;
                         }
-            }
+                    }
 
-        }
-    }
+                }
+            }
         }
     }
     return true;
