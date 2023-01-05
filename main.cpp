@@ -11,6 +11,9 @@ using namespace std;
 float scale = 0.6;
 bool testMode = false;
 
+//Variables for current gamestate
+bool inGame = false;
+
 int addMovement(int x){
     if (x < 0){
         return x-1;
@@ -328,9 +331,8 @@ void afterTurnRoutine(string& color, vector <vector <Square>> sm){
     }
 }
 
-int main(){
+void runMatch(sf::RenderWindow& window){
     srand(time(NULL));
-    sf::RenderWindow window(sf::VideoMode(800, 800), "Chess in SFML");
     vector<vector <Square>> squareMatrix; //All squares on the board
     buildMatrix(squareMatrix);
     placePieces(squareMatrix, "black");
@@ -342,7 +344,7 @@ int main(){
 
     bool clicked = false;
 
-    while (window.isOpen()){
+    while(window.isOpen()){
         checkClose(window);
 
 
@@ -372,6 +374,46 @@ int main(){
         }
         drawSquares(window, squareMatrix);
         drawPieces(window, squareMatrix);
+        window.display();
+    }
+}
+
+void mainMenu(sf::RenderWindow& window){
+    sf::Font font;
+    font.loadFromFile("fonts/FreeMono.ttf");
+    sf::Text text;
+    text.setFont(font);
+    text.setString("Hello World");
+    text.setCharacterSize(24);
+    text.setFillColor(sf::Color::Red);
+    text.setPosition(100,100);
+    while(window.isOpen()){
+        checkClose(window);
+
+        sf::RectangleShape r(sf::Vector2f(300.f,60.f));
+        r.setPosition(sf::Vector2f(250, 100));
+        r.setFillColor(sf::Color(255,255,255));
+        window.draw(r);
+        window.draw(text);
+        window.display();
+    }
+
+}
+
+
+int main(){
+    sf::RenderWindow window(sf::VideoMode(800, 800), "Chess in SFML");
+
+    while (window.isOpen()){
+        checkClose(window);
+
+        if(inGame){ 
+            runMatch(window);
+        }
+        else{
+            mainMenu(window);
+        }
+
         window.display();
     }
 
