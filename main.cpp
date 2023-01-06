@@ -10,6 +10,9 @@ using namespace std;
 
 float scale = 0.6;
 bool testMode = false;
+const int SCREEN_WIDTH = 800;
+const int SCREEN_HEIGHT = 800;
+
 
 //Variables for current gamestate
 bool inGame = false;
@@ -197,6 +200,7 @@ Piece& selectPiece(vector<vector <Square>>& sm, sf::RenderWindow & w){
     sf::Vector2i mousePos = sf::Mouse::getPosition(w);
     int pressedCol = floor(mousePos.x / 100);
     int pressedRow = floor(mousePos.y / 100);
+
     return sm[pressedRow][pressedCol].p;
 }
 
@@ -378,31 +382,52 @@ void runMatch(sf::RenderWindow& window){
     }
 }
 
-void mainMenu(sf::RenderWindow& window){
+void addTextbox(sf::RenderWindow& window, string t, int y){
     sf::Font font;
     font.loadFromFile("fonts/FreeMono.ttf");
     sf::Text text;
     text.setFont(font);
-    text.setString("Hello World");
-    text.setCharacterSize(24);
-    text.setFillColor(sf::Color::Red);
-    text.setPosition(100,100);
+    text.setString(t);
+    text.setCharacterSize(36);
+    text.setFillColor(sf::Color::Black);
+    text.setPosition(400-(23*t.size())/2, y);
+    sf::RectangleShape r(sf::Vector2f(300.f,60.f));
+    r.setPosition(sf::Vector2f(250, y));
+    window.draw(r);
+    window.draw(text);
+
+}
+
+void mainMenu(sf::RenderWindow& window){
+    sf::Texture t; 
+    sf::Sprite Sprite;
+    t.loadFromFile("chessStockImage.jpg");
+    // t.setSmooth(true);
+    Sprite.setTexture(t);
+    // Sprite.setScale(scale,scale);
+    Sprite.setPosition(-15,-20);
+    window.draw(Sprite);
+    addTextbox(window, "Play Game", 100);
+    // addTextbox(window, "Settings", 200);
+
     while(window.isOpen()){
         checkClose(window);
 
-        sf::RectangleShape r(sf::Vector2f(300.f,60.f));
-        r.setPosition(sf::Vector2f(250, 100));
-        r.setFillColor(sf::Color(255,255,255));
-        window.draw(r);
-        window.draw(text);
         window.display();
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Left)){
+            sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+            if (mousePos.x >= 250 && mousePos.x <= 550 && mousePos.y >= 100 && mousePos.y <= 160){
+                inGame = true;
+                return;
+            }
+        }
     }
 
 }
 
 
 int main(){
-    sf::RenderWindow window(sf::VideoMode(800, 800), "Chess in SFML");
+    sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Chess in SFML");
 
     while (window.isOpen()){
         checkClose(window);
@@ -413,7 +438,7 @@ int main(){
         else{
             mainMenu(window);
         }
-
+        window.clear();
         window.display();
     }
 
